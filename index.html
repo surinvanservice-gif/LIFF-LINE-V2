@@ -69,8 +69,7 @@
 
 <script>
     // ใส่ Web App URL ที่ได้จาก Google Apps Script ตรงนี้
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyh5mOm9-g7wYJ1MklCTdN0betlLEDSABfGxLbhrwO8x2ZVP4r_LfZjBqB0sXtrD6B-/exec
-";
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyh5mOm9-g7wYJ1MklCTdN0betlLEDSABfGxLbhrwO8x2ZVP4r_LfZjBqB0sXtrD6B-/exec";
 
     // เริ่มต้น LIFF
     window.onload = function() {
@@ -93,11 +92,30 @@
         }
     }
 
+    // ฟังก์ชันส่งข้อความกลับเข้าแชท LINE ที่เปิด LIFF อยู่
+    async function sendMessageBackToChat(text) {
+        if (liff.isInClient()) {
+            try {
+                await liff.sendMessages([
+                    {
+                        type: "text",
+                        text: text
+                    }
+                ]);
+            } catch (error) {
+                console.error('ส่งข้อความกลับแชทไม่สำเร็จ:', error);
+            }
+        } else {
+            console.log('ไม่ได้เปิดจากในแอป LINE จึงไม่สามารถส่งข้อความกลับแชทได้');
+        }
+    }
+
     // ฟังก์ชันส่งข้อมูลไปที่ Google Sheets
     function submitData(event, sheetName, formId) {
         event.preventDefault();
         const form = document.getElementById(formId);
         let values = [];
+        let summaryText = "";
 
         if(sheetName === 'Booking') {
             // เรียงลำดับตามคอลัมน์ B ถึง O (B=ชื่อผู้จอง ... O=หมายเหตุ)
@@ -117,6 +135,12 @@
                 form.b_contact.value,
                 form.b_note.value
             ];
+            summaryText = "✅ บันทึก Booking สำเร็จ\n"
+                + "ผู้จอง: " + form.b_name.value + "\n"
+                + "วันที่: " + form.b_start_date.value + " " + form.b_start_time.value + "\n"
+                + "รับ: " + form.b_pickup.value + "\n"
+                + "ส่ง: " + form.b_dropoff.value + "\n"
+                + "ราคา: " + form.b_price.value + " บาท";
         } else if(sheetName === 'Expense') {
             // เรียงลำดับตามคอลัมน์ D ถึง M (D=รายการ ... M=สถานที่)
             values = [
@@ -131,6 +155,10 @@
                 form.e_note.value,
                 form.e_place.value
             ];
+            summaryText = "✅ บันทึก Expense สำเร็จ\n"
+                + "รายการ: " + form.e_item.value + "\n"
+                + "รวม: " + form.e_total.value + " บาท\n"
+                + "วันที่: " + form.e_date.value;
         }
 
         const payload = {
@@ -144,9 +172,12 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
-        .then(() => {
+        .then(async () => {
             alert('บันทึกข้อมูลสำเร็จเรียบร้อยค่ะ!');
+            await sendMessageBackToChat(summaryText);
             form.reset();
+            // ปิดหน้า LIFF อัตโนมัติหลังส่งข้อความ (ลบ comment ออกถ้าต้องการเปิดใช้)
+            // liff.closeWindow();
         })
         .catch((error) => {
             console.error('Error:', error);
@@ -157,4 +188,3 @@
 
 </body>
 </html>
-
