@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>บันทึกข้อมูล Booking & Expense</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        body { font-family: sans-serif; background-color: #f4f6f9; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 500px; margin: auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #00B900; }
+        .tab-menu { display: flex; margin-bottom: 20px; border-bottom: 2px solid #ddd; }
+        .tab-btn { flex: 1; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; background: none; border: none; font-size: 16px; color: #777; }
+        .tab-btn.active { color: #00B900; border-bottom: 3px solid #00B900; }
+        .form-section { display: none; }
+        .form-section.active { display: block; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        button.submit-btn { width: 100%; background-color: #00B900; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button.submit-btn:active { background-color: #009900; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ระบบบันทึกข้อมูล</h2>
+    
+    <!-- เมนูสลับฟอร์ม -->
+    <div class="tab-menu">
+        <button class="tab-btn active" onclick="switchTab('booking')">ส่วนที่ 1: Booking</button>
+        <button class="tab-btn" onclick="switchTab('expense')">ส่วนที่ 2: Expense</button>
+    </div>
+
+    <!-- ฟอร์มส่วนที่ 1: Booking -->
+    <form id="bookingForm" class="form-section active" onsubmit="submitData(event, 'Booking', 'bookingForm')">
+        <div class="form-group"><label>ชื่อผู้จอง</label><input type="text" name="b_name" required></div>
+        <div class="form-group"><label>กลุ่มลูกค้า</label><input type="text" name="b_group"></div>
+        <div class="form-group"><label>วันเริ่มงาน</label><input type="date" name="b_start_date"></div>
+        <div class="form-group"><label>เวลาเริ่มงาน</label><input type="time" name="b_start_time"></div>
+        <div class="form-group"><label>วันจบงาน</label><input type="date" name="b_end_date"></div>
+        <div class="form-group"><label>เวลาจบงาน</label><input type="time" name="b_end_time"></div>
+        <div class="form-group"><label>ประเภทงาน</label><input type="text" name="b_type"></div>
+        <div class="form-group"><label>สถานที่รับ</label><input type="text" name="b_pickup"></div>
+        <div class="form-group"><label>สถานที่ส่ง</label><input type="text" name="b_dropoff"></div>
+        <div class="form-group"><label>ราคา</label><input type="number" name="b_price"></div>
+        <div class="form-group"><label>สถานะ</label><input type="text" name="b_status"></div>
+        <div class="form-group"><label>เบอร์โทรศัพท์</label><input type="tel" name="b_phone"></div>
+        <div class="form-group"><label>ช่องทางติดต่อ</label><input type="text" name="b_contact"></div>
+        <div class="form-group"><label>หมายเหตุ</label><textarea name="b_note"></textarea></div>
+        <button type="submit" class="submit-btn">บันทึกข้อมูล Booking</button>
+    </form>
+
+    <!-- ฟอร์มส่วนที่ 2: Expense -->
+    <form id="expenseForm" class="form-section" onsubmit="submitData(event, 'Expense', 'expenseForm')">
+        <div class="form-group"><label>รายการ</label><input type="text" name="e_item"></div>
+        <div class="form-group"><label>ค่าคนขับ</label><input type="number" name="e_driver"></div>
+        <div class="form-group"><label>ค่าน้ำมัน</label><input type="number" name="e_gas"></div>
+        <div class="form-group"><label>ค่าทางด่วน</label><input type="number" name="e_toll"></div>
+        <div class="form-group"><label>ค่าซ่อมบำรุง</label><input type="number" name="e_repair"></div>
+        <div class="form-group"><label>อื่นๆ</label><input type="number" name="e_other"></div>
+        <div class="form-group"><label>รวม</label><input type="number" name="e_total"></div>
+        <div class="form-group"><label>วันที่ใช้จ่าย</label><input type="date" name="e_date"></div>
+        <div class="form-group"><label>หมายเหตุ</label><textarea name="e_note"></textarea></div>
+        <div class="form-group"><label>สถานที่</label><input type="text" name="e_place"></div>
+        <button type="submit" class="submit-btn">บันทึกข้อมูล Expense</button>
+    </form>
+</div>
+
+<script>
+    // ใส่ Web App URL ที่ได้จาก Google Apps Script ตรงนี้
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyh5mOm9-g7wYJ1MklCTdN0betlLEDSABfGxLbhrwO8x2ZVP4r_LfZjBqB0sXtrD6B-/exec
+";
+
+    // เริ่มต้น LIFF
+    window.onload = function() {
+        liff.init({ liffId: "2011147097-aFQZftXm" })
+          .then(() => { if (!liff.isInClient() && !liff.isLoggedIn()) { liff.login(); } })
+          .catch((err) => { console.log('LIFF Initialization failed', err); });
+    };
+
+    // ฟังก์ชันสลับแท็บฟอร์ม
+    function switchTab(tabName) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.form-section').forEach(sec => sec.classList.remove('active'));
+        
+        if(tabName === 'booking') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('bookingForm').classList.add('active');
+        } else {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('expenseForm').classList.add('active');
+        }
+    }
+
+    // ฟังก์ชันส่งข้อมูลไปที่ Google Sheets
+    function submitData(event, sheetName, formId) {
+        event.preventDefault();
+        const form = document.getElementById(formId);
+        let values = [];
+
+        if(sheetName === 'Booking') {
+            // เรียงลำดับตามคอลัมน์ B ถึง O (B=ชื่อผู้จอง ... O=หมายเหตุ)
+            values = [
+                form.b_name.value,
+                form.b_group.value,
+                form.b_start_date.value,
+                form.b_start_time.value,
+                form.b_end_date.value,
+                form.b_end_time.value,
+                form.b_type.value,
+                form.b_pickup.value,
+                form.b_dropoff.value,
+                form.b_price.value,
+                form.b_status.value,
+                form.b_phone.value,
+                form.b_contact.value,
+                form.b_note.value
+            ];
+        } else if(sheetName === 'Expense') {
+            // เรียงลำดับตามคอลัมน์ D ถึง M (D=รายการ ... M=สถานที่)
+            values = [
+                form.e_item.value,
+                form.e_driver.value,
+                form.e_gas.value,
+                form.e_toll.value,
+                form.e_repair.value,
+                form.e_other.value,
+                form.e_total.value,
+                form.e_date.value,
+                form.e_note.value,
+                form.e_place.value
+            ];
+        }
+
+        const payload = {
+            sheetName: sheetName,
+            values: values
+        };
+
+        fetch(WEB_APP_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(() => {
+            alert('บันทึกข้อมูลสำเร็จเรียบร้อยค่ะ!');
+            form.reset();
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        });
+    }
+</script>
+
+</body>
+</html>
+
